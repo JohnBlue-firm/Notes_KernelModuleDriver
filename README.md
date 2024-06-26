@@ -31,6 +31,7 @@ The driver design should consider:
 * Compatibility and Error Handling
 
 Here are general code about USB Device Driver:
+Here are general code about USB Device Driver:
 ```C
 /*
 usb_driver_general.c
@@ -54,7 +55,23 @@ rmmod usb_driver_general.ko
 // Structure to represent the USB driver state
 struct usb_driver_state {
     struct usb_device *udev;
+    struct usb_interface *interface;
+    struct urb *urb; // USB Request Block for handling USB transfers
+    unsigned char *bulk_in_buffer; // Buffer for IN transfers
 };
+
+// ISR for handling USB interrupts
+static irqreturn_t usb_isr(int irq, void *dev_id)
+{
+    struct usb_driver_state *driver_state = (struct usb_driver_state *)dev_id;
+    struct urb *urb = driver_state->urb;
+    struct usb_device *udev = driver_state->udev;
+
+    // Handle the interrupt here
+    // Example: Read data from the USB device, process it, etc.
+
+    return IRQ_HANDLED;
+}
 
 /* USB device probe function
 This function is called when a USB device matching the IDs in usb_driver_id_table is connected (probe function of usb_driver structure).
@@ -65,6 +82,7 @@ static int usb_driver_probe(struct usb_interface *interface, const struct usb_de
 {
     struct usb_device *udev = interface_to_usbdev(interface);
     struct usb_driver_state *driver_state;
+    int ret;
 
     // Check if the device matches our supported hardware
     if (udev->descriptor.idVendor == SUPPORTED_VENDOR_ID && udev->descriptor.idProduct == SUPPORTED_PRODUCT_ID) {
@@ -76,10 +94,33 @@ static int usb_driver_probe(struct usb_interface *interface, const struct usb_de
         }
 
         driver_state->udev = udev;
-        usb_set_intfdata(interface, driver_state);
+        driver_state->interface = interface;
 
-        // Initialize driver for this device (optional)
-        // Perform any initialization needed for device operation
+        // Initialize USB Request Block (URB) and buffer for IN transfers (example)
+        driver_state->urb = usb_alloc_urb(0, GFP_KERNEL);
+        if (!driver_state->urb) {
+            dev_err(&interface->dev, "Failed to allocate URB\n");
+            return -ENOMEM;
+        }
+
+        driver_state->bulk_in_buffer = kmalloc(64, GFP_KERNEL);
+        if (!driver_state->bulk_in_buffer) {
+            dev_err(&interface->dev, "Failed to allocate bulk_in_buffer\n");
+            usb_free_urb(driver_state->urb);
+            return -ENOMEM;
+        }
+
+        // Example: Register IRQ handler for USB interrupt
+        ret = request_irq(interface->cur_altsetting->endpoint[0].desc.bInterval, usb_isr,
+                          IRQF_SHARED, "usb_driver_isr", driver_state);
+        if (ret) {
+            dev_err(&interface->dev, "Failed to register ISR\n");
+            kfree(driver_state->bulk_in_buffer);
+            usb_free_urb(driver_state->urb);
+            return ret;
+        }
+
+        usb_set_intfdata(interface, driver_state);
 
         dev_info(&interface->dev, "USB device attached: Vendor ID = 0x%04X, Product ID = 0x%04X\n",
                  udev->descriptor.idVendor, udev->descriptor.idProduct);
@@ -99,8 +140,16 @@ static void usb_driver_disconnect(struct usb_interface *interface)
     if (driver_state) {
         struct usb_device *udev = driver_state->udev;
 
-        // Clean up resources allocated to the device (optional)
-        // Perform cleanup actions as needed
+        // Clean up resources allocated to the device
+        if (driver_state->urb) {
+            usb_free_urb(driver_state->urb);
+        }
+        if (driver_state->bulk_in_buffer) {
+            kfree(driver_state->bulk_in_buffer);
+        }
+
+        // Free IRQ handler
+        free_irq(interface->cur_altsetting->endpoint[0].desc.bInterval, driver_state);
 
         dev_info(&interface->dev, "USB device detached: Vendor ID = 0x%04X, Product ID = 0x%04X\n",
                  udev->descriptor.idVendor, udev->descriptor.idProduct);
@@ -163,3 +212,4 @@ Notes:
 * Loading/ Unloading: Via usb_driver_init() & usb_driver_exit()
 * Resource Management: Linux kernel APIs (devm_kzalloc(), devm_kfree(), etc.) are used for memory allocation and deallocation, ensuring proper resource management.
 * Debugging and Logging: pr_info() and dev_info() are used for logging messages, which can be viewed using kernel log utilities (dmesg, journalctl).
+* Interrupt Endpoint Handling: Ensure you correctly handle the interrupt endpoint of your USB device. The example uses interface->cur_altsetting->endpoint[0].desc.bInterval as a simplified approach; in a real scenario, you would determine the correct endpoint for interrupts based on your device's descriptor.
