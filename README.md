@@ -1,6 +1,6 @@
 # Linux Kernel vs. Linux Modules
-***Linux Kernel:*** The Linux kernel is the core component of the Linux operating system. It provides essential services such as process management, memory management, device drivers, filesystem support, and networking capabilities. ***The kernel is loaded into memory during the boot process and remains resident*** in memory throughout the system's uptime. The Linux kernel is typically compiled as a monolithic kernel, where all core functionalities are compiled together into a single binary (vmlinux or vmlinuz). \
-***Linux Modules:*** Linux modules, also known as loadable kernel modules (LKMs), are pieces of code that can be loaded and unloaded from the running kernel dynamically. They extend the kernel’s functionality ***without requiring a reboot***. Modules are compiled separately from the main kernel and are usually stored as .ko files.
+* ***Linux Kernel:*** The Linux kernel is the core component of the Linux operating system. It provides essential services such as process management, memory management, device drivers, filesystem support, and networking capabilities. ***The kernel is loaded into memory during the boot process and remains resident*** in memory throughout the system's uptime. The Linux kernel is typically compiled as a monolithic kernel, where all core functionalities are compiled together into a single binary (vmlinux or vmlinuz).
+* ***Linux Modules:*** Linux modules, also known as loadable kernel modules (LKMs), are pieces of code that can be loaded and unloaded from the running kernel dynamically. They extend the kernel’s functionality ***without requiring a reboot***. Modules are compiled separately from the main kernel and are usually stored as .ko files.
 
 # Modules Key Characteristics
 * ***Dynamic Loading / Unloading***
@@ -8,14 +8,14 @@
 * ***Dependency Management*** (When a module is loaded, the kernel ensures that its dependencies are also loaded, resolving dependencies automatically using tools like modprobe)
 
 # Modules Examples
-***Device Drivers:*** USB controllers, network adapters, graphics cards, etc.
-***Filesystem Modules:*** ext4, NTFS, FAT, etc.
-***Networking Modules:*** TCP/IP stack, WiFi, Bluetooth, etc.
+* ***Device Drivers:*** USB controllers, network adapters, graphics cards, etc.
+* ***Filesystem Modules:*** ext4, NTFS, FAT, etc.
+* ***Networking Modules:*** TCP/IP stack, WiFi, Bluetooth, etc.
 
 # Module Management Commands
-***insmod:*** Inserts a module into the kernel.
-***rmmod:*** Removes a module from the kernel.
-***modprobe:*** A more advanced utility that manages module loading and unloading, including handling dependencies and configuration.
+* ***insmod:*** Inserts a module into the kernel.
+* ***rmmod:*** Removes a module from the kernel.
+* ***modprobe:*** A more advanced utility that manages module loading and unloading, including handling dependencies and configuration.
 
 # Driver and Plug-and-Play (PnP)
 Normal procedure of plugin should look like:
